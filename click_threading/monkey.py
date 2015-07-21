@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import contextlib
+
 
 _ui_functions = (
     'echo',
@@ -13,16 +15,22 @@ _ui_functions = (
     'pause',
 )
 
-saved = {}
 
-
+@contextlib.contextmanager
 def patch_ui_functions(wrapper):
     '''Wrap all termui functions with a custom decorator.'''
     NONE = object()
+    saved = {}
     import click
 
     for name in _ui_functions:
         orig = getattr(click, name, NONE)
         if orig is not NONE:
-            orig = saved.setdefault(name, orig)
+            saved[name] = orig
             setattr(click, name, wrapper(orig))
+
+    try:
+        yield
+    finally:
+        for name, orig in saved.items():
+            setattr(click, name, orig)
