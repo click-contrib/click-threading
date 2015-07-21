@@ -38,10 +38,7 @@ class UiWorker(object):
         self.results = queue.Queue()
 
     def work(self):
-        try:
-            func = self.tasks.get()
-        except queue.Empty:
-            return
+        func = self.tasks.get()
 
         try:
             result = func()
