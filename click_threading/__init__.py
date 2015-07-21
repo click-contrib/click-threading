@@ -34,6 +34,8 @@ class Thread(threading.Thread):
 
 
 class UiWorker(object):
+    SHUTDOWN = object()
+
     def __init__(self):
         if not _is_main_thread():
             raise RuntimeError('The UiWorker can only run on the main thread.')
@@ -41,17 +43,23 @@ class UiWorker(object):
         self.tasks = queue.Queue()
         self.results = queue.Queue()
 
-    def work(self):
-        func = self.tasks.get()
+    def shutdown(self):
+        self.tasks.put(self.SHUTDOWN)
 
-        try:
-            result = func()
-            exc_info = None
-        except BaseException:
-            exc_info = sys.exc_info()
-            result = None
+    def run(self):
+        while True:
+            func = self.tasks.get()
+            if func is self.SHUTDOWN:
+                return
 
-        self.results.put((func, result, exc_info))
+            try:
+                result = func()
+                exc_info = None
+            except BaseException:
+                exc_info = sys.exc_info()
+                result = None
+
+            self.results.put((func, result, exc_info))
 
     def put(self, func):
         self.tasks.put(func)

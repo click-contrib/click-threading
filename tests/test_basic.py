@@ -40,13 +40,14 @@ def test_ui_worker_basic(runner):
         def target():
             assert click.echo is not orig_click_echo
             click.echo('two')
+            ui.shutdown()
 
         click.echo('one')
 
         with ui.patch_click():
             t = click_threading.Thread(target=target)
             t.start()
-            ui.work()
+            ui.run()
 
         click.echo('three')
         t.join()
