@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import queue
 import threading
 import functools
 import click
 
 from ._compat import reraise
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 __version__ = '0.1.0'
 
