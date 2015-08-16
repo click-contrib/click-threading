@@ -30,7 +30,7 @@ def test_context_pushing_thread(runner):
 
 
 def test_ui_worker_basic(runner):
-    orig_click_echo = click.echo
+    orig_click_prompt = click.prompt
 
     @click.command()
     def cli():
@@ -38,19 +38,19 @@ def test_ui_worker_basic(runner):
         ui = click_threading.UiWorker()
 
         def target():
-            assert click.echo is not orig_click_echo
-            click.echo('two')
+            assert click.prompt is not orig_click_prompt
+            click.prompt('two')
             ui.shutdown()
 
-        click.echo('one')
+        click.prompt('one')
 
         with ui.patch_click():
             t = click_threading.Thread(target=target)
             t.start()
             ui.run()
 
-        click.echo('three')
+        click.prompt('three')
         t.join()
 
-    result = runner.invoke(cli, catch_exceptions=False)
-    assert result.output.splitlines() == ['one', 'two', 'three']
+    result = runner.invoke(cli, catch_exceptions=False, input='y\n' * 3)
+    assert result.output.splitlines() == ['one: y', 'two: y', 'three: y']
