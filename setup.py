@@ -21,6 +21,6 @@ setup(
     license='MIT',
     packages=['click_threading'],
     install_requires=[
-        'click',
+        'click>=5.0',
     ],
 )

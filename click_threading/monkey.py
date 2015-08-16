@@ -4,7 +4,6 @@ import contextlib
 
 
 _ui_functions = (
-    'echo',
     'echo_via_pager',
     'prompt',
     'confirm',
