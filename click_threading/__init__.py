@@ -12,7 +12,7 @@ try:
 except ImportError:
     import Queue as queue
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 def _is_main_thread(thread=None):
