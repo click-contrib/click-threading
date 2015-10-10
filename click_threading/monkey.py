@@ -2,17 +2,21 @@
 
 import contextlib
 
+class FunctionInfo(object):
+    def __init__(self, interactive):
+        self.interactive = interactive
 
-_ui_functions = (
-    'echo_via_pager',
-    'prompt',
-    'confirm',
-    'clear',
-    'edit',
-    'launch',
-    'getchar',
-    'pause',
-)
+_ui_functions = {
+    'echo_via_pager': FunctionInfo(interactive=True),
+    'prompt': FunctionInfo(interactive=True),
+    'confirm': FunctionInfo(interactive=True),
+    'clear': FunctionInfo(interactive=False),
+    'echo': FunctionInfo(interactive=False),
+    'edit': FunctionInfo(interactive=True),
+    'launch': FunctionInfo(interactive=True),
+    'getchar': FunctionInfo(interactive=True),
+    'pause': FunctionInfo(interactive=True),
+}
 
 
 @contextlib.contextmanager
@@ -22,11 +26,11 @@ def patch_ui_functions(wrapper):
     saved = {}
     import click
 
-    for name in _ui_functions:
+    for name, info in _ui_functions.items():
         orig = getattr(click, name, NONE)
         if orig is not NONE:
             saved[name] = orig
-            setattr(click, name, wrapper(orig))
+            setattr(click, name, wrapper(orig, info))
 
     try:
         yield

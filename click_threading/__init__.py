@@ -44,11 +44,11 @@ class UiWorker(object):
         self.results = queue.Queue()
 
     def shutdown(self):
-        self.tasks.put(self.SHUTDOWN)
+        self.put(self.SHUTDOWN, wait=False)
 
     def run(self):
         while True:
-            func = self.tasks.get()
+            func, need_result = self.tasks.get()
             if func is self.SHUTDOWN:
                 return
 
@@ -59,10 +59,13 @@ class UiWorker(object):
                 exc_info = sys.exc_info()
                 result = None
 
-            self.results.put((func, result, exc_info))
+            if need_result:
+                self.results.put((func, result, exc_info))
 
-    def put(self, func):
-        self.tasks.put(func)
+    def put(self, func, wait=True):
+        self.tasks.put((func, wait))
+        if not wait:
+            return
         orig_func, result, exc_info = self.results.get()
 
         if orig_func is not func:
@@ -76,10 +79,10 @@ class UiWorker(object):
     def patch_click(self):
         from .monkey import patch_ui_functions
 
-        def wrapper(f):
+        def wrapper(f, info):
             @functools.wraps(f)
             def inner(*a, **kw):
-                return self.put(lambda: f(*a, **kw))
+                return self.put(lambda: f(*a, **kw), wait=info.interactive)
             return inner
 
         return patch_ui_functions(wrapper)
