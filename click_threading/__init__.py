@@ -13,7 +13,7 @@ try:
 except ImportError:
     import Queue as queue
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 _CTX_WORKER_KEY = __name__ + '.uiworker'
 
