@@ -66,6 +66,9 @@ class UiWorker(object):
                 self.results.put((func, result, exc_info))
 
     def put(self, func, wait=True):
+        if _is_main_thread():
+            return func()
+
         self.tasks.put((func, wait))
         if not wait:
             return
