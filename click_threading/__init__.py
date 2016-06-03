@@ -13,6 +13,14 @@ try:
 except ImportError:
     import Queue as queue
 
+# The docs state that "Future should not be instantiated directly, only by
+# Executors", but since I'm basically implementing my own executor here, I
+# think we're fine.
+try:
+    from concurrent.futures import Future
+except ImportError:
+    from futures import Future
+
 __version__ = '0.3.0'
 
 _CTX_WORKER_KEY = __name__ + '.uiworker'
@@ -44,43 +52,33 @@ class UiWorker(object):
             raise RuntimeError('The UiWorker can only run on the main thread.')
 
         self.tasks = queue.Queue()
-        self.results = queue.Queue()
 
     def shutdown(self):
         self.put(self.SHUTDOWN, wait=False)
 
     def run(self):
         while True:
-            func, need_result = self.tasks.get()
+            func, future = self.tasks.get()
             if func is self.SHUTDOWN:
                 return
 
             try:
                 result = func()
-                exc_info = None
-            except BaseException:
-                exc_info = sys.exc_info()
-                result = None
-
-            if need_result:
-                self.results.put((func, result, exc_info))
+            except BaseException as e:
+                future.set_exception(e)
+            else:
+                future.set_result(result)
 
     def put(self, func, wait=True):
         if _is_main_thread():
             return func()
 
-        self.tasks.put((func, wait))
+        future = Future()
+        self.tasks.put((func, future))
         if not wait:
             return
-        orig_func, result, exc_info = self.results.get()
 
-        if orig_func is not func:
-            raise RuntimeError('Got the wrong result.')
-
-        if exc_info is not None:
-            reraise(*exc_info)
-
-        return result
+        return future.result()
 
     @contextlib.contextmanager
     def patch_click(self):

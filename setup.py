@@ -23,4 +23,7 @@ setup(
     install_requires=[
         'click>=5.0',
     ],
+    extras_require={
+        ':python_version < "3.2"': 'futures'
+    }
 )
