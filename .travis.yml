@@ -6,5 +6,6 @@ python:
     - 3.3
     - 3.4
 
-install: pip install tox
+install:
+   - pip install -U tox setuptools wheel $(python -V |& grep -q 'Python 3.2' && echo 'pip<8.0 virtualenv<14.0')
 script: tox
