@@ -21,7 +21,7 @@ try:
 except ImportError:
     from futures import Future
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 _CTX_WORKER_KEY = __name__ + '.uiworker'
 
