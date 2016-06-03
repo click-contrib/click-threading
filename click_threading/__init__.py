@@ -3,6 +3,7 @@
 import sys
 import threading
 import functools
+import contextlib
 import click
 
 from ._compat import reraise
@@ -13,6 +14,8 @@ except ImportError:
     import Queue as queue
 
 __version__ = '0.1.2'
+
+_CTX_WORKER_KEY = __name__ + '.uiworker'
 
 
 def _is_main_thread(thread=None):
@@ -76,13 +79,29 @@ class UiWorker(object):
 
         return result
 
+    @contextlib.contextmanager
     def patch_click(self):
         from .monkey import patch_ui_functions
 
         def wrapper(f, info):
             @functools.wraps(f)
             def inner(*a, **kw):
-                return self.put(lambda: f(*a, **kw), wait=info.interactive)
+                return get_ui_worker() \
+                    .put(lambda: f(*a, **kw), wait=info.interactive)
             return inner
 
-        return patch_ui_functions(wrapper)
+        ctx = click.get_current_context()
+        with patch_ui_functions(wrapper):
+            ctx.meta[_CTX_WORKER_KEY] = self
+            try:
+                yield
+            finally:
+                assert ctx.meta.pop(_CTX_WORKER_KEY) is self
+
+
+def get_ui_worker():
+    try:
+        ctx = click.get_current_context()
+        return ctx.meta[_CTX_WORKER_KEY]
+    except (RuntimeError, KeyError):
+        raise RuntimeError('UI worker not found.')
