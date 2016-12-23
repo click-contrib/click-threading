@@ -33,7 +33,21 @@ def _is_main_thread(thread=None):
 
 class Thread(threading.Thread):
     '''A thread that automatically pushes the parent thread's context in the
-    new thread.'''
+    new thread.
+
+    Since version 5.0, click maintains global stacks of context objects. The
+    topmost context on that stack can be accessed with
+    :py:func:`get_current_context`.
+
+    There is one stack for each Python thread. That means if you are in the
+    main thread (where you can use :py:func:`get_current_context` just fine)
+    and spawn a :py:class:`threading.Thread`, that thread won't be able to
+    access the same context using :py:func:`get_current_context`.
+
+    :py:class:`Thread` is a subclass of :py:class:`threading.Thread` that
+    preserves the current thread context when spawning a new one, by pushing it
+    on the stack of the new thread as well.
+    '''
 
     def __init__(self, *args, **kwargs):
         self._click_context = click.get_current_context()
@@ -45,6 +59,45 @@ class Thread(threading.Thread):
 
 
 class UiWorker(object):
+    '''
+    A worker-queue system to manage and synchronize output and prompts from
+    other threads.
+
+    >>> import click
+    >>> from click_threading import UiWorker, Thread, get_ui_worker
+    >>> ui = UiWorker()  # on main thread
+    >>> def target():
+    ...     click.echo("Hello world!")
+    ...     get_ui_worker().shutdown()
+    ...
+    >>>
+    >>> @click.command()
+    ... def cli():
+    ...     with ui.patch_click():
+    ...         t = Thread(target=target)
+    ...         t.start()
+    ...         ui.run()
+    >>> runner = click.testing.CliRunner()
+    >>> result = runner.invoke(cli, [])
+    >>> assert result.output.strip() == 'Hello world!'
+
+    Using this class instead of just spawning threads brings a few advantages:
+
+    - If one thread prompts for input, other output from other threads is
+      queued until the :py:func:`click.prompt` call returns.
+    - If you call echo with a multiline-string, it is guaranteed that this
+      string is not interleaved with other output.
+
+    There are two disadvantages:
+
+    - The main thread is used for the output (using any other thread produces
+      weird behavior with interrupts). ``ui.run()`` in the above example blocks
+      until ``ui.shutdown()`` is called.
+    - Usage requires monkeypatching all of Click's UI functions such as
+      ``prompt``, ``echo``, ``edit``, ``launch``, etc. To make sure you're
+      using the monkeypatched versions, never use ``from click import X`` in
+      your code, rather use ``import click`` and invoke ``click.X``.
+    '''
     SHUTDOWN = object()
 
     def __init__(self):
