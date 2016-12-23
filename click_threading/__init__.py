@@ -17,9 +17,9 @@ except ImportError:
 # Executors", but since I'm basically implementing my own executor here, I
 # think we're fine.
 try:
-    from concurrent.futures import Future
+    from concurrent.futures import Future as _Future
 except ImportError:
-    from futures import Future
+    from futures import Future as _Future
 
 __version__ = '0.4.0'
 
@@ -73,7 +73,7 @@ class UiWorker(object):
         if _is_main_thread():
             return func()
 
-        future = Future()
+        future = _Future()
         self.tasks.put((func, future))
         if not wait:
             return
