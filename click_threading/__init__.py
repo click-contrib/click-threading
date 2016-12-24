@@ -88,15 +88,11 @@ class UiWorker(object):
     - If you call echo with a multiline-string, it is guaranteed that this
       string is not interleaved with other output.
 
-    There are two disadvantages:
+    Disadvantages:
 
     - The main thread is used for the output (using any other thread produces
       weird behavior with interrupts). ``ui.run()`` in the above example blocks
       until ``ui.shutdown()`` is called.
-    - Usage requires monkeypatching all of Click's UI functions such as
-      ``prompt``, ``echo``, ``edit``, ``launch``, etc. To make sure you're
-      using the monkeypatched versions, never use ``from click import X`` in
-      your code, rather use ``import click`` and invoke ``click.X``.
     '''
     SHUTDOWN = object()
 
