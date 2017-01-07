@@ -25,15 +25,8 @@ project = 'click_threading'
 with open(os.path.join(os.path.dirname(__file__), '../LICENSE')) as f:
     copyright = next(iter(f))[len('Copyright (c) '):]
 
-try:
-    # The full version, including alpha/beta/rc tags.
-    release = pkg_resources.require(project)[0].version
-except pkg_resources.DistributionNotFound:
-    print('To build the documentation, the distribution information of '
-          '{} has to be available. Run "setup.py develop" to do '
-          'this.'.format(project))
-    sys.exit(1)
-
+import click_threading
+release = click_threading.__version__
 version = '.'.join(release.split('.')[:2])  # The short X.Y version.
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
