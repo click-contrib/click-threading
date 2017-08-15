@@ -4,7 +4,7 @@ import types
 import contextlib
 import inspect
 
-from ._compat import PY2
+from ._compat import PY2, getargspec
 
 
 class FunctionInfo(object):
@@ -40,7 +40,7 @@ def patch_ui_functions(wrapper):
 
         new_f = wrapper(_copy_fn(f), info)
 
-        argspec = inspect.getargspec(f)
+        argspec = getargspec(f)
         signature = inspect.formatargspec(*argspec) \
             .lstrip('(') \
             .rstrip(')')
