@@ -40,12 +40,16 @@ def patch_ui_functions(wrapper):
 
         new_f = wrapper(_copy_fn(f), info)
 
-        argspec = getargspec(f)
-        signature = inspect.formatargspec(*argspec) \
-            .lstrip('(') \
-            .rstrip(')')
-        args = ', '.join(arg.split('=')[0].split(':')[0].strip()
-                         for arg in signature.split(','))
+        orig_sig_obj = inspect.signature(f)
+        sig_obj = orig_sig_obj.replace(
+            parameters=[
+                p.replace(annotation=inspect.Parameter.empty)
+                for p in orig_sig_obj.parameters.values()
+            ],
+            return_annotation=inspect.Signature.empty,
+        )
+        signature = str(sig_obj).lstrip('(').rstrip(')')
+        args = ', '.join(p for p in sig_obj.parameters.keys())
 
         stub_f = eval('lambda {s}: {n}._real_click_fn({a})'
                       .format(n=f.__name__, s=signature, a=args))
